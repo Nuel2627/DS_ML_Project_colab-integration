@@ -1,0 +1,389 @@
+---
+title: "Final Project"
+author: "Emmanuel Azu"
+date: "`r Sys.Date()`"
+output: html_document
+---
+## Data
+**1 Please describe what your data looks like and where you got it. Identify what the variables and samples are. Describe how the data was originally created.**
+
+The Data I am using for my report comes from the CDC WONDER data. CDC WONDER (Wide-ranging Online Data for Epidemiologic Research) is an online database developed by the Centers for Disease Control and Prevention (CDC). It provides access to a variety of public health information and allows users to query numerous datasets on topics related to health and epidemiology. Some of the features of the data set include Mortality data, Birth data, Cancer incidence, Hospital discharge data, Environmental health data, Vaccine adverse event reports, Population estimates. 
+
+I chose to pull the data relating to birth rates in the various regions across the United States between 2016-2021. Information about the data can be found at: https://wonder.cdc.gov/controller/datarequest/D149;jsessionid=82480BD0AC2EABDF3E6F99D9501A
+
+I have 742 observations and 12 variables. 
+
+
+I will load packages I willl be needing in my analysis
+```{r, Packages, echo=TRUE, warning=FALSE, message=FALSE, results='hide'}
+library(tidyverse)
+library(Hmisc)
+library(naniar)
+library(readxl)
+library(dplyr)
+library(magrittr)
+library(psych)
+library(knitr)
+library(broom)
+# Install the package if it's not already installed
+if (!requireNamespace("dplyr", quietly = TRUE)) {
+  install.packages("dplyr")
+}
+if (!requireNamespace("magrittr", quietly = TRUE)) {
+  install.packages("magrittr")
+}
+
+# Load the package
+library(dplyr)
+library(magrittr)
+# Load necessary libraries
+library(ggplot2)
+library(dplyr)
+library(forcats)
+```
+
+```{r Load_packages, echo=TRUE}
+# Install and load readr if not already installed
+if (!requireNamespace("readr", quietly = TRUE)) {
+  install.packages("readr")
+}
+library(readr)
+```
+I imported the data from my local computer using the read_csv() function
+ I also set my working directory
+```{r New_data}
+getwd()
+Final <- read_excel("C:/Users/ea07407/OneDrive - Georgia Southern University/Summer 2024/Community Assessment/WA4.xlsx")
+```
+To have an idea about my data , I use the head() and tail() functions.
+```{r Viewing}
+head(Final)
+```
+Using the dim()function
+
+```{r dimensions}
+dim(Final)
+```
+
+To determine how many unique Regions there are I used the `unqiue()` function and the `length()` function.
+
+```{r Unique}
+pull(Final, "Census Region of Residence") %>%
+  unique() %>%
+  length()
+```
+There are four unique regions.
+
+**2 Perform at least three different data subsetting, cleaning, or manipulation methods that were described in this course on your data. Examples are: renaming the columns, recoding values, reshaping the data, filtering the data etc.**
+
+First sub-setting: I decided to rename the variables for easy identification and usage using the  `rename()` function to do this, listing the new name first and write to new data set known as Final2.
+
+```{r Variable}
+Final2 <- Final %>%
+  rename("Gestational_diabetes" = "Gestational Diabetes", "Mom_Age" = "Age of Mother 9 Code", "Marital_Status" = "Marital Status", "Payment_Source" = "Source of Payment for Delivery", "Region" = "Census Region of Residence Code", "Birht_Weight" = "Average Birth Weight (grams)")
+colnames(Final)
+```
+
+I then decided to arrange the data by `Births` using the `arrange()` function with the largest score shown first, thus I needed to use `desc()`.
+
+```{r}
+Final3 <- Final2 %>% arrange(desc(Births))
+head(Final)
+```
+South has the highest birthrates among all the regions.
+
+
+Second sub-setting:
+
+I intend to recode the variable 'Region' for better understanding and identification  of the various regions in the data
+```{r Recoded}
+Final_region <- Final3 %>%
+  mutate(Region = recode(Region,
+                         "CENS-R1" = "Northeast",
+                         "CENS-R2" = "Midwest",
+                         "CENS-R3" = "South",
+                         "CENS-R4" = "West"))
+Final_region
+```
+# Drop specified variables from the final dataframe
+Third Sub-setting
+I decided to drop some of the variables that repeated and won't form part of the analysis.
+```{r Dropping}
+# Dropping the specified columns
+Final_drop <- Final_region %>%
+  select(-`Gestational Diabetes Code`,
+         -`Census Region of Residence`,
+         -`Marital Status Code`,
+         -`Age of Mother 9`,
+         -`Source of Payment for Delivery Code`,
+         -`Marital Status Code`)
+
+head(Final_drop)
+```
+After dropping those variables, I have 7 variables left that can be use for the analysis.
+
+
+Dropping all missing values and Checking for the dimension of the knew data set
+```{r Checking}
+# Removing rows with any missing values
+Final_drop_clean <- na.omit(Final_drop)
+dim(Final_drop_clean)
+```
+After cleaning the data of all missing values, I have 742 observations and 7 variables.
+
+
+**3 Please describe what you did to clean/subset/wrangle/manipulate your data and why**
+After uploading the data to the rstudio and viewing the variables. I then renamed some of the variables for easy identification and understanding of the variables using the rename() function. I recoded the region variable for easy understanding of the various regions.The third data wrangling was to drop variables that were not relevant to the analysis using the select()  function. After cleaning the data of all missing values, I have 742 observations and 7 variables.
+
+## Descriptive Statistics
+**4 Please generate the descriptive statistics (quartiles, means, range, standard deviation etc.) on the variables.**
+
+I decided to get summary statistics for the variables using the describe() function and presented it in a table form using the kable() function
+```{r Description}
+# Generate descriptive statistics
+desc_stats <- describe(Final_drop)
+
+# Print the output as a table
+kable(desc_stats)
+```
+## Data Visualization
+
+**6 Make two different kinds of visualizations of your data using ggplot2.**
+
+I decided to make a plot of the Birthrates by region using `geom_point()` and `ggplot()`.
+
+
+```{r plots}
+# Plot
+ggplot(data = Final_drop, aes(x = Region, y = Births)) +
+  geom_point(color = "blue", size = 3) +
+  labs(
+    title = "Birth Rates by Region",
+    x = "Region",
+    y = "Number of Births"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold"),
+    axis.title = element_text(face = "bold"),
+    axis.text = element_text(size = 12)
+  )
+```
+From the plot, South region has the highest birth rates, while the Western region has the lowest.
+
+I am also interested in looking at the distribution of the birth weight by the diabetes status of the mothers.
+
+```{r}
+# Reordering factor levels based on the median birth weight
+Final_plot <- Final_drop %>%
+  mutate(
+    Gestational_diabetes = fct_reorder(Gestational_diabetes, Birht_Weight)
+  )
+
+# Creating the plot
+ggplot(data = Final_plot, aes(x = Gestational_diabetes, y = Birht_Weight, fill = Gestational_diabetes)) +
+  geom_violin(trim = FALSE, alpha = 0.5) +
+  geom_jitter(width = 0.2, size = 1.5, color = "black", alpha = 0.7) +
+  labs(
+    title = "Distribution of Birth Weight by Gestational Diabetes Status",
+    x = "Gestational Diabetes Status",
+    y = "Birth Weight (grams)"
+  ) +
+  scale_fill_brewer(palette = "Set3") +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 14),
+    axis.title = element_text(face = "bold", size = 12),
+    axis.text = element_text(size = 10),
+    legend.position = "none"
+  )
+```
+From the plot above, it is clear that the women with unknown gestational diabetes status have children with the highest birth weight though those without diabetes had more number of babies.
+
+
+I have also decided to see birthrates by sources of payment. To see which category most of the mothers belong to.
+
+```{r}
+# Reordering factor levels based on the median birth weight
+Payment <- Final_drop %>%
+  mutate(
+    Payment_Source = as_factor(Payment_Source),
+    Payment_Source = fct_reorder(Payment_Source, Birht_Weight)
+  )
+
+# Creating the plot
+ggplot(data = Payment, aes(x = Payment_Source, y = Birht_Weight, color = Payment_Source)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0.5) +
+  geom_jitter(width = 0.2, size = 1.5, alpha = 0.7) +
+  labs(
+    title = "Distribution of Birth Weight by Payment Source",
+    x = "Payment Source",
+    y = "Birth Weight (grams)"
+  ) +
+  scale_color_brewer(palette = "Set1") +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 14),
+    axis.title = element_text(face = "bold", size = 12),
+    axis.text = element_text(size = 10),
+    legend.position = "none"
+  )
+```
+It is clear that most payment is Self pay and the second to that is unknown. The least is Medicaid, which shows the burden of health care cost on individuals.
+
+
+I then decided to to look at what age category was likely to have children as single mothers. Using `count()` and `tally()` I determined that there were 10 different regions.
+
+```{r Status}
+count(Final_drop, `Marital_Status`)
+```
+We had three categories under marital status but there was not much between the married and the unmarried.
+
+```{r Age}
+count(Final_drop, `Mom_Age`) %>% tally()
+```
+We have 9 age categories.
+
+
+I then used `ggplot()`  and `geom_boxplot()` to create a boxplot of the age categories and marital status.  I colored the boxplots but using the `fill` argument within the `aes` specifications. 
+```{r boxplot}
+ggplot(Final_drop, aes(x = Marital_Status, fill = Mom_Age)) +
+  geom_bar(position = "stack") +
+  labs(
+    title = "Distribution of Mother's Age by Marital Status",
+    x = "Marital Status",
+    y = "Count",
+    fill = "Mother's Age"
+  ) +
+  scale_fill_viridis_d(option = "plasma") +  # Change fill colors as needed
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 14),
+    axis.title = element_text(face = "bold", size = 12),
+    axis.text = element_text(size = 10),
+    legend.title = element_text(face = "bold")
+  )
+```
+I then used `ggplot()`  and `geom_boxplot()` to create a boxplot of the Maritatal Status categories and Births.  I colored the boxplots but using the `fill` argument within the `aes` specifications. 
+```{r boxplot2}
+median_data <- Final_drop %>%
+  group_by(Marital_Status) %>%
+  summarise(median_Births = median(Births))
+
+# Create boxplot with medians
+ggplot(Final_drop, aes(x = Marital_Status, y = Births, fill = Marital_Status)) +
+  geom_boxplot(color = "black", alpha = 0.7) +  # Adjust boxplot appearance
+  geom_point(data = median_data, aes(x = Marital_Status, y = median_Births), 
+             color = "black", shape = 18, size = 3) +  # Add median points
+  labs(x = "Marital Status", y = "Births") +
+  scale_fill_brewer(palette = "Set1") +  # Use a Brewer color palette
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+## Data Analysis
+
+**7 Perform a simple analysis of your data.**
+
+I decided to perform a simple analysis to compare birth rates in different regions. I decided to compare Southern and Nothern region. The H0 here states that South = Northeast = 0, meaning no significance difference at 0.05 level of significance.
+
+I first filtered the data to create two new data sets for these regions only and then performed a t test without assuming equal variance between the scores for each region.
+
+```{r}
+South <- Final_drop %>%
+  filter(`Region` == "South")
+North <- Final_drop %>%
+  filter(`Region` == "Northeast")
+
+t_test_result <- t.test(
+  x = pull(South, Births),
+  y = pull(North, Births),
+  var.equal = FALSE
+)
+
+# Extract relevant information from t-test result
+t_test_summary <- data.frame(
+  Statistic = t_test_result$statistic,
+  P_Value = t_test_result$p.value,
+  Confidence_Interval = paste(t_test_result$conf.int[1], "-", t_test_result$conf.int[2]),
+  Mean_Difference = t_test_result$estimate[1] - t_test_result$estimate[2],
+  DF = t_test_result$parameter
+)
+
+# Display the t-test results in a neat table
+kable(t_test_summary, caption = "T-test Results for x and y")
+```
+
+**8 Describe what analysis you performed and why. Provide some simple interpretation about what your analysis might indicate about your data.**
+
+I decided to use a t-test analysis as I was interested to see if there is any difference in the number of births between the Southern and Northeast regions. 
+
+From the above result with a p-value of 0.0349 which is less than 0.05. This suggest that there is enough evidence against the null hypothesis which states there is no significant difference in birthrates between the Northeast and the southern region in the United States. Hence, the null hypothesis is rejected.
+
+
+I also decided to check for difference in the birth weight by region adjusted by marital status, and mothers' age.
+
+```{r ANOVA}
+Final_drop <- Final_drop %>%
+  mutate(
+    Region = factor(Region),
+    Marital_Status = factor(Marital_Status),
+    Mom_Age = factor(Mom_Age)  # Ensure Mom_Age is treated as a factor
+  )
+
+# Fit GLM model
+glm_model <- glm(Birht_Weight ~ Region + Marital_Status + Mom_Age, data = Final_drop)
+
+# Summarize the GLM results using broom package
+glm_summary <- tidy(glm_model)
+
+# Display the GLM results in a neat table
+kable(glm_summary, caption = "GLM Results for Birth Weight Adjusted by Marital Status and Mom Age")
+```
+Since I was interested in checking for the difference in the various regions while adjusting for age nad marital status with multiple levels, ANOVA was most appropriate.
+
+In the result above, the intercept shows a high level of significance, meaning that in the absence of all other variables, birth weight still differs. Using Midwest as reference, only the southern region differs significantly. Using married as reference, all other groups birthweight differs significantly. When it comes to mothers' age, all all other age group differs significantly compared to the reference group which is less than 15 years. Overall, birthweight differ by region and this is influenced by marital status and mothers' age.
+
+
+**9 Add sessionInfo() to the end of your analysis so that you and others can see what version of R and packages you used**
+```{r Info}
+sessionInfo()
+```
+
+**10 Bonus: Create a function as part of your analysis. If you do this correctly, it can make up for lost points on other sections.**
+
+Using Function can make the work easier
+
+```{r Function}
+# Define the function
+perform_t_test <- function(data, region_var, births_var, region1, region2) {
+  # Filter data for the two regions
+  data_filtered <- data %>%
+    filter(!!sym(region_var) %in% c(region1, region2))
+  
+  # Perform t-test
+  t_test_result <- t.test(
+    data_filtered %>% filter(!!sym(region_var) == region1) %>% pull(!!sym(births_var)),
+    data_filtered %>% filter(!!sym(region_var) == region2) %>% pull(!!sym(births_var))
+  )
+  
+  # Extract relevant information from t-test result
+  t_test_summary <- data.frame(
+    Statistic = t_test_result$statistic,
+    P_Value = t_test_result$p.value,
+    Confidence_Interval = paste(t_test_result$conf.int[1], "-", t_test_result$conf.int[2]),
+    Mean_Difference = t_test_result$estimate[1] - t_test_result$estimate[2],
+    DF = t_test_result$parameter
+  )
+  
+  # Display the t-test results in a neat table
+  kable(t_test_summary, caption = paste("T-test Results for", region1, "vs", region2, "on Births"))
+}
+```
+
+
+Putting the function into use
+```{r example}
+# Example usage
+perform_t_test(data = Final_drop, region_var = "Region", births_var = "Births", region1 = "South", region2 = "Northeast")
+```
